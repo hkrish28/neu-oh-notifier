@@ -3,9 +3,11 @@ import time
 import json
 import os
 from config import LOGIN_URL, MONITOR_URL, COURSE_ID, USER, PASSWORD, REDIRECT_URL
+from playsound import playsound
 
 def send_notification(title, message):
     command = f'display notification "{message}" with title "{title}"'
+    playsound('notification.mp3')
     os.system('osascript -e \'' + command + '\'')
     
 # URL of the login page and the page to monitor
@@ -35,11 +37,13 @@ def login_and_check_changes():
             try:
                 # Fetch the webpage after login
                 response = session.get(MONITOR_URL + str(COURSE_ID), headers={'Cookie': 'auth_token=' + auth_token}) 
-                queue_size_latest = json.loads(response.content).get('queues')[0].get('queueSize')
                 
                 if response.status_code == 401:  # Unauthorized, refresh token
+                    print("Unauthorized. Refreshing token...")
                     auth_token = fetch_auth_token(session)
                     continue
+
+                queue_size_latest = json.loads(response.content).get('queues')[0].get('queueSize')
 
                 if queue_size_latest == queue_size:
                     print("Queue size unchanged. Waiting...")
