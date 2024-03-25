@@ -2,15 +2,27 @@ import requests
 import time
 import json
 import os
-from config import LOGIN_URL, MONITOR_URL, COURSE_ID, USER, PASSWORD, REDIRECT_URL
+from config import LOGIN_URL, MONITOR_URL, COURSE_ID, USER, PASSWORD, REDIRECT_URL, CONNECTOR_URL, TEAMS_WEBHOOK_ENABLED
 from playsound import playsound
 
-def send_notification(title, message):
-    command = f'display notification "{message}" with title "{title}"'
+def send_notification(message):
+    if TEAMS_WEBHOOK_ENABLED == 'True':
+        send_message_to_teams_webhook(message)
+    command = f'display notification "{message}" with title OH Queue Update'
     playsound('notification.mp3')
     os.system('osascript -e \'' + command + '\'')
     
-# URL of the login page and the page to monitor
+def send_message_to_teams_webhook(message):
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "text": message
+    }
+    response = requests.post(CONNECTOR_URL, headers=headers, data=json.dumps(payload))
+    
+    if response.status_code == 200:
+        print("Message sent successfully to Microsoft Teams!")
+    else:
+        print("Failed to send message to Microsoft Teams. Status code:", response.status_code)
 
 
 def fetch_auth_token(session):
@@ -29,10 +41,11 @@ def fetch_auth_token(session):
 
 # Function to log in and check for changes
 def login_and_check_changes():
+    errorCounter = 0
     # Start a session
     with requests.Session() as session:
         auth_token = fetch_auth_token(session)
-        queue_size = -1 # Initialize queue size to an invalid number so that first check will always trigger a notification
+        send_message_to_teams_webhook("Monitoring started. You will be notified when the queue size changes.")
         while True:
             try:
                 # Fetch the webpage after login
@@ -40,26 +53,27 @@ def login_and_check_changes():
                 
                 if response.status_code == 401:  # Unauthorized, refresh token
                     print("Unauthorized. Refreshing token...")
+                    errorCounter += 1
                     auth_token = fetch_auth_token(session)
                     continue
 
-                queue_size_latest = json.loads(response.content).get('queues')[0].get('queueSize')
+                queue_size = json.loads(response.content).get('queues')[0].get('queueSize')
 
-                if queue_size_latest == queue_size:
-                    print("Queue size unchanged. Waiting...")
-                    time.sleep(60)  # Adjust this value as needed
+                if queue_size == 0 :
+                    print("Queue size 0. Waiting...")
                 else:
-                    queue_size = queue_size_latest
                     # Queue size changed, send notification and update the queue size
                     print("Notification to be sent. Queue size is now: ", queue_size)
-                    # Send a simple notification
                     send_notification("OH Queue Update", "Queue size is now: " + str(queue_size))
+                errorCounter = 0
+                time.sleep(60)  # Adjust this value as needed
             except Exception as e:
                 auth_token = fetch_auth_token(session)
                 print("Error:", e)
                 print("Response:", response.content)
-                send_notification("OH Queue Update", "Error occurred. Check console for details.")
-                time.sleep(10)  # Wait before retrying
+                if errorCounter >= 3:
+                    send_notification("Error occurred. Check console for details.")
+                time.sleep(20)  # Wait before retrying
 
 # Start the login and monitoring process
 login_and_check_changes()
