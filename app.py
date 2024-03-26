@@ -74,7 +74,7 @@ def login_and_check_changes():
                 else:
                     # Queue size changed, send notification and update the queue size
                     print("Notification to be sent. Queue size is now: ", queue_size)
-                    send_notification("OH Queue Update", "Queue size is now: " + str(queue_size))
+                    send_notification("Queue size is now: " + str(queue_size))
                 errorCounter = 0
                 time.sleep(60)  # Adjust this value as needed
             except Exception as e:
