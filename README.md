@@ -6,8 +6,9 @@ This is a simple project to get a desktop notification whenever there is a chang
 
 - Install [Python3](https://www.python.org/downloads/)
 - Run `pip install -r requirements.txt` to install the app dependencies
-- Enter your username, password (that you use for logging into the Khoury Admin portal) and course id for the course(that you see in the URL of your course office hours page)
 
 # Running the app
 
 Run `python3 app.py` in the project directory and the app will start running and notify you when there is any change to office hours queue. Enjoy!
+
+Note: When you run the application for the first time, you will be prompted to enter your username, password (that you use for logging into the Khoury Admin portal) and course id for the course(that you see in the URL of your course office hours page).

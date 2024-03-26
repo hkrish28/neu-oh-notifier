@@ -2,8 +2,10 @@ import requests
 import time
 import json
 import os
-from config import LOGIN_URL, MONITOR_URL, COURSE_ID, USER, PASSWORD, REDIRECT_URL, CONNECTOR_URL, TEAMS_WEBHOOK_ENABLED
+from config import LOGIN_URL, MONITOR_URL, COURSE_ID, REDIRECT_URL, CONNECTOR_URL, TEAMS_WEBHOOK_ENABLED
 from playsound import playsound
+from credentials import get_credentials
+
 
 def send_notification(message):
     if TEAMS_WEBHOOK_ENABLED == 'True':
@@ -26,6 +28,7 @@ def send_message_to_teams_webhook(message):
 
 
 def fetch_auth_token(session):
+    global USER, PASSWORD
     # Perform login
     login_data = {
         "username": USER,
@@ -33,6 +36,11 @@ def fetch_auth_token(session):
         "code": ""
     }
     response = session.post(LOGIN_URL, json=login_data)
+    print("Login status code:", response.status_code)
+    if response.status_code == 401:
+        print("Invalid credentials. Trying again...")
+        USER, PASSWORD = get_credentials(True)
+        return fetch_auth_token(session)
     token = json.loads(response.content).get('key')
     response = session.post(REDIRECT_URL, headers = {'Authorization': 'Token ' + token})
     auth_token = json.loads(response.content).get('redirect').split("=")[1]
@@ -41,6 +49,8 @@ def fetch_auth_token(session):
 
 # Function to log in and check for changes
 def login_and_check_changes():
+    global USER, PASSWORD
+    USER, PASSWORD = get_credentials()
     errorCounter = 0
     # Start a session
     with requests.Session() as session:
