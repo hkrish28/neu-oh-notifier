@@ -8,9 +8,9 @@ from credentials import get_credentials
 
 
 def send_notification(message):
-    if TEAMS_WEBHOOK_ENABLED == 'True':
+    if TEAMS_WEBHOOK_ENABLED == True:
         send_message_to_teams_webhook(message)
-    command = f'display notification "{message}" with title OH Queue Update'
+    command = f'display notification "{message}" with title "OH Queue Update"'
     playsound('notification.mp3')
     os.system('osascript -e \'' + command + '\'')
     
